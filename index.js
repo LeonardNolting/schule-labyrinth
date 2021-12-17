@@ -2,14 +2,18 @@ import {JSDOM} from 'jsdom'
 import fs      from 'fs'
 
 function leseOrdner (ordner) {
-	fs.readdir(ordner, (fehler, dateiNamen) => {
+	fs.readdir(ordner, (fehler, datei) => {
 		if (fehler) throw fehler
-		dateiNamen.forEach(dateiName => leseDatei(`${ordner}/${dateiName}`))
+		if (datei )
+		datei.forEach(datei => leseDatei(ordner, datei))
 	})
 }
 
-function leseDatei (name) {
-	JSDOM.fromFile(name).then((jsdom) => console.log(jsdom.serialize()))
+function leseDatei (ordner, datei) {
+	JSDOM.fromFile(ordner + "/" + datei).then((dom) => {
+		dom.window.document.head.innerHTML += "<style>body { background: red; }</style>"
+		console.log(dom.serialize());
+	})
 }
 
 leseOrdner("./input")
