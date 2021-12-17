@@ -1,9 +1,19 @@
-import * as cheerio from 'cheerio';
+import * as cheerio from 'cheerio'
+import fs from 'fs'
 
-const $ = cheerio.load("<ul id=\"fruits\">\n" +
-	"  <li class=\"apple\">Apple</li>\n" +
-	"  <li class=\"orange\">Orange</li>\n" +
-	"  <li class=\"pear\">Pear</li>\n" +
-	"</ul>");
+function leseOrdner(ordner) {
+	fs.readdir(ordner, (fehler, dateiNamen) => {
+		if (fehler) throw fehler
+		dateiNamen.forEach(dateiName => leseDatei(`${ordner}/${dateiName}`))
+	})
+}
 
-console.log($.html())
+function leseDatei(name) {
+	fs.readFile(name, (fehler, inhalt) => {
+		if (fehler) throw fehler
+		const dom = cheerio.load(inhalt)
+		console.log(dom.html())
+	})
+}
+
+leseOrdner("./input")
