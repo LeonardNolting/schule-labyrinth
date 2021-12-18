@@ -1,9 +1,9 @@
 import {JSDOM} from 'jsdom'
-import {mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'fs'
+import {copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'fs'
 import * as path from "path"
 
-const baueOrdner = (ordner: string): { dateien: string[], stylesheets: string[], ordner: string[] } => {
-	const struktur = {dateien: [], stylesheets: [], ordner: []}
+const baueOrdner = (ordner: string): { dateien: string[], assets: string[], stylesheets: string[], ordner: string[] } => {
+	const struktur = {dateien: [], assets: [], stylesheets: [], ordner: []}
 	readdirSync(ordner).forEach(item => {
 		const pfad = path.join(ordner, item)
 		const stats = statSync(pfad)
@@ -12,6 +12,7 @@ const baueOrdner = (ordner: string): { dateien: string[], stylesheets: string[],
 			const dateiEndung = path.extname(item).toLowerCase().slice(1)
 			if (dateiEndung === "css") struktur.stylesheets.push(item)
 			else if (dateiEndung === "html") struktur.dateien.push(item)
+			else struktur.assets.push(item)
 		}
 	})
 	return struktur
@@ -25,29 +26,38 @@ async function baueDatei(pfad: string, stylesheets: string[]): Promise<string> {
 
 const baueStylesheet = (pfad: string) => readFileSync(pfad).toString();
 
-const dateien = async (ordner: string, stylesheets: string[]): Promise<{ [pfad: string]: string }> => {
+const anleitung = async (ordner: string, stylesheets: string[]): Promise<{ dateien: { [pfad: string]: string }, assets: string[] }> => {
 	const ordnerAnalyse = baueOrdner(ordner)
-	const generiert = {}
+	const dateien = {}
+	const assets = ordnerAnalyse.assets.map(asset => path.join(ordner, asset))
 	stylesheets.push(...ordnerAnalyse.stylesheets.map(stylesheet => baueStylesheet(path.join(ordner, stylesheet))))
 	for (const datei of ordnerAnalyse.dateien) {
 		const pfad = path.join(ordner, datei)
-		generiert[pfad] = await baueDatei(pfad, stylesheets);
+		dateien[pfad] = await baueDatei(pfad, stylesheets);
 	}
-	for (const name of ordnerAnalyse.ordner)
-		Object.assign(generiert, await dateien(path.join(ordner, name), stylesheets))
-	return generiert
+	for (const name of ordnerAnalyse.ordner) {
+		const kindGeneriert = await anleitung(path.join(ordner, name), stylesheets)
+		Object.assign(dateien, kindGeneriert.dateien)
+		assets.push(...kindGeneriert.assets)
+	}
+	return {dateien, assets}
 }
 
-async function bauen(input: string, output: string) {
-	rmSync('./dir', {force: true, recursive: true})
-	Object.entries(await dateien(input, [])).forEach(([pfad, inhalt]) => {
-		if (pfad.slice(0, input.length) !== input) throw new Error("Kann Pfad zu output nicht auflösen.")
+const pfadVonInputZuOutput = (pfad: string, input: string, output: string): string => {
+	if (pfad.slice(0, input.length) !== input) throw new Error("Kann Pfad zu output nicht auflösen.")
+	return path.join(output, pfad.slice(input.length))
+}
 
-		const outputPfad = path.resolve(path.join(output, pfad.slice(input.length)));
-		mkdirSync(path.dirname(outputPfad), {recursive: true})
-		writeFileSync(outputPfad, inhalt)
+function bauen(input: string, output: string) {
+	rmSync(output, {force: true, recursive: true})
+	anleitung(input, []).then(dateien => {
+		Object.entries(dateien.dateien).forEach(([pfad, inhalt]) => {
+			const outputPfad = pfadVonInputZuOutput(pfad, input, output)
+			mkdirSync(path.dirname(outputPfad), {recursive: true})
+			writeFileSync(outputPfad, inhalt)
+		})
+		dateien.assets.forEach(asset => copyFileSync(asset, pfadVonInputZuOutput(asset, input, output)))
 	})
 }
 
-bauen("input", "output").then(() => {
-})
+bauen("input", "output")
