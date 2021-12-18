@@ -19,7 +19,8 @@ const baueOrdner = (ordner: string): { dateien: string[], assets: string[], styl
 };
 
 async function baueDatei(pfad: string, stylesheets: string[]): Promise<string> {
-	const dom = await JSDOM.fromFile(pfad)
+	const dom = await JSDOM.fromFile(pfad, {contentType: "text/html; charset=utf-8"})
+	dom.window.document.head.innerHTML += '<meta charset="utf-8"/>'
 	stylesheets.forEach(stylesheet => dom.window.document.head.innerHTML += `<style>${stylesheet}</style>`)
 	return dom.serialize()
 }
@@ -54,7 +55,7 @@ function bauen(input: string, output: string) {
 		Object.entries(dateien.dateien).forEach(([pfad, inhalt]) => {
 			const outputPfad = pfadVonInputZuOutput(pfad, input, output)
 			mkdirSync(path.dirname(outputPfad), {recursive: true})
-			writeFileSync(outputPfad, inhalt)
+			writeFileSync(outputPfad, inhalt, {encoding: "utf-8"})
 		})
 		dateien.assets.forEach(asset => copyFileSync(asset, pfadVonInputZuOutput(asset, input, output)))
 	})
