@@ -1,13 +1,21 @@
-import {JSDOM} from 'jsdom'
-import fs      from 'fs'
+import {JSDOM}       from 'jsdom'
+import {readdirSync} from 'fs'
+import path          from "path"
 
-function leseOrdner (ordner) {
-	fs.readdir(ordner, (fehler, datei) => {
-		if (fehler) throw fehler
-		if (datei )
-		datei.forEach(datei => leseDatei(ordner, datei))
-	})
+const ladeStruktur = ordner => readdirSync(ordner).reduce((struktur, item) => {
+	if (item.isDirectory()) struktur.ordner.push(item)
+	else {
+		const dateiEndung = path.extname(item).toLowerCase()
+		if (dateiEndung === "css") struktur.stylesheets.push(item)
+		else if (dateiEndung === "html") struktur.dateien.push(ladeStruktur(path.resolve(ordner, item)))
+	}
+}, {dateien: [], stylesheets: [], ordner: []});
+
+function verarbeiteStruktur(struktur) {
+
 }
+
+// function erstelleDatei(pfad, stylesheets)
 
 function leseDatei (ordner, datei) {
 	JSDOM.fromFile(ordner + "/" + datei).then((dom) => {
@@ -16,4 +24,4 @@ function leseDatei (ordner, datei) {
 	})
 }
 
-leseOrdner("./input")
+ladeStruktur("./input")
