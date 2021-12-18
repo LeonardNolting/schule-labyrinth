@@ -1,5 +1,5 @@
 import {JSDOM} from 'jsdom'
-import {readdirSync, readFileSync, statSync} from 'fs'
+import {mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'fs'
 import * as path from "path"
 
 const baueOrdner = (ordner: string): { dateien: string[], stylesheets: string[], ordner: string[] } => {
@@ -39,11 +39,15 @@ const dateien = async (ordner: string, stylesheets: string[]): Promise<{ [pfad: 
 }
 
 async function bauen(input: string, output: string) {
+	rmSync('./dir', {force: true, recursive: true})
 	Object.entries(await dateien(input, [])).forEach(([pfad, inhalt]) => {
-		console.log()
-		console.log(pfad, inhalt)
+		if (pfad.slice(0, input.length) !== input) throw new Error("Kann Pfad zu output nicht auflösen.")
+
+		const outputPfad = path.resolve(path.join(output, pfad.slice(input.length)));
+		mkdirSync(path.dirname(outputPfad), {recursive: true})
+		writeFileSync(outputPfad, inhalt)
 	})
 }
 
-bauen("./input", "./output").then(() => {
+bauen("input", "output").then(() => {
 })
