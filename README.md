@@ -34,7 +34,7 @@ Der Workflow wird ausgeführt was sich durch ein gelbes Licht unten zeigt.
 Sobald das Licht grün ist, kannst du [hier](https://github.com/LeonardNolting/schule-labyrinth/releases/download/latest/output.zip) die neue Zip-Datei herunterladen und in Filius einfügen. 
 Das sollte innerhalb höchstens einer Minute passieren.
 
-Falls etwas nicht funktioniert hat, wird die Anzeige rot und mir wird eine E-Mail geschickt. Du kannst dann evtl. die nächsten Schritte befolgen, was aber etwas technisches Verständnis voraussetzt.
+Falls etwas nicht funktioniert hat, wird die Anzeige rot und mir wird eine E-Mail geschickt. Du kannst dann evtl. die Schritte unter "Lokal bauen" befolgen, was aber etwas technisches Verständnis voraussetzt.
 
 ### Editor
 Möchtest du mehrere Dateien bearbeiten, kann es einfacher sein, einen Editor dafür zu benutzen. Drücke dazu einfach nur die "." (Punkt)-Taste auf der Tastatur, oder folge [diesem Link](https://github.dev/LeonardNolting/schule-labyrinth/tree/main/input).
