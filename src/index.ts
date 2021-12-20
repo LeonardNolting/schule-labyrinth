@@ -1,9 +1,10 @@
 import {JSDOM} from 'jsdom'
 import {copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'fs'
 import * as path from "path"
+import {Converter} from "showdown";
 
-const baueOrdner = (ordner: string): { dateien: string[], assets: string[], stylesheets: string[], ordner: string[] } => {
-	const struktur = {dateien: [], assets: [], stylesheets: [], ordner: []}
+const baueOrdner = (ordner: string): { htmlDateien: string[], mdDateien: string[], assets: string[], stylesheets: string[], ordner: string[] } => {
+	const struktur = {htmlDateien: [], mdDateien: [], assets: [], stylesheets: [], ordner: []}
 	readdirSync(ordner).forEach(item => {
 		const pfad = path.join(ordner, item)
 		const stats = statSync(pfad)
@@ -11,33 +12,48 @@ const baueOrdner = (ordner: string): { dateien: string[], assets: string[], styl
 		else if (stats.isFile()) {
 			const dateiEndung = path.extname(item).toLowerCase().slice(1)
 			if (dateiEndung === "css") struktur.stylesheets.push(item)
-			else if (dateiEndung === "html") struktur.dateien.push(item)
+			else if (dateiEndung === "md") struktur.mdDateien.push(item)
+			else if (dateiEndung === "html") struktur.htmlDateien.push(item)
 			else struktur.assets.push(item)
 		}
 	})
 	return struktur
-};
+}
 
-async function baueDatei(pfad: string, stylesheets: string[]): Promise<string> {
-	const dom = await JSDOM.fromFile(pfad, {contentType: "text/html; charset=utf-8"})
+function baueDOM(html: string, stylesheets: string[]): string {
+	const dom = new JSDOM(html)
 	dom.window.document.head.innerHTML += '<meta charset="utf-8"/>'
 	stylesheets.forEach(stylesheet => dom.window.document.head.innerHTML += `<style>${stylesheet}</style>`)
 	return dom.serialize()
 }
 
-const baueStylesheet = (pfad: string) => readFileSync(pfad).toString();
+const baueHTML = (pfad: string, stylesheets: string[]) => baueDOM(readFileSync(pfad).toString(), stylesheets)
 
-const anleitung = async (ordner: string, stylesheets: string[]): Promise<{ dateien: { [pfad: string]: string }, assets: string[] }> => {
+const baueCSS = (pfad: string) => readFileSync(pfad).toString();
+
+const converter = new Converter()
+
+function baueMD(pfad: string, stylesheets: string[]): string {
+	const md = readFileSync(pfad).toString()
+	const html = converter.makeHtml(md)
+	return baueDOM(html, stylesheets)
+}
+
+const anleitung = (ordner: string, stylesheets: string[]): { dateien: { [pfad: string]: string }, assets: string[] } => {
 	const ordnerAnalyse = baueOrdner(ordner)
 	const dateien = {}
 	const assets = ordnerAnalyse.assets.map(asset => path.join(ordner, asset))
-	stylesheets.push(...ordnerAnalyse.stylesheets.map(stylesheet => baueStylesheet(path.join(ordner, stylesheet))))
-	for (const datei of ordnerAnalyse.dateien) {
+	stylesheets.push(...ordnerAnalyse.stylesheets.map(stylesheet => baueCSS(path.join(ordner, stylesheet))))
+	for (const datei of ordnerAnalyse.htmlDateien) {
 		const pfad = path.join(ordner, datei)
-		dateien[pfad] = await baueDatei(pfad, stylesheets);
+		dateien[pfad] = baueHTML(pfad, stylesheets);
+	}
+	for (const datei of ordnerAnalyse.mdDateien) {
+		const pfad = path.join(ordner, datei)
+		dateien[pfad.slice(0, -path.extname(pfad).length) + ".html"] = baueMD(pfad, stylesheets)
 	}
 	for (const name of ordnerAnalyse.ordner) {
-		const kindGeneriert = await anleitung(path.join(ordner, name), stylesheets)
+		const kindGeneriert = anleitung(path.join(ordner, name), stylesheets)
 		Object.assign(dateien, kindGeneriert.dateien)
 		assets.push(...kindGeneriert.assets)
 	}
@@ -51,14 +67,13 @@ const pfadVonInputZuOutput = (pfad: string, input: string, output: string): stri
 
 function bauen(input: string, output: string) {
 	rmSync(output, {force: true, recursive: true})
-	anleitung(input, []).then(dateien => {
-		Object.entries(dateien.dateien).forEach(([pfad, inhalt]) => {
-			const outputPfad = pfadVonInputZuOutput(pfad, input, output)
-			mkdirSync(path.dirname(outputPfad), {recursive: true})
-			writeFileSync(outputPfad, inhalt, {encoding: "utf-8"})
-		})
-		dateien.assets.forEach(asset => copyFileSync(asset, pfadVonInputZuOutput(asset, input, output)))
+	const dateien = anleitung(input, [])
+	Object.entries(dateien.dateien).forEach(([pfad, inhalt]) => {
+		const outputPfad = pfadVonInputZuOutput(pfad, input, output)
+		mkdirSync(path.dirname(outputPfad), {recursive: true})
+		writeFileSync(outputPfad, inhalt, {encoding: "utf-8"})
 	})
+	dateien.assets.forEach(asset => copyFileSync(asset, pfadVonInputZuOutput(asset, input, output)))
 }
 
 bauen("input", "output")
