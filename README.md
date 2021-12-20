@@ -17,6 +17,7 @@ Mit zunehmender Größe des Spiels wird die Verwaltung der HTML-Dateien stark au
 
 Um diesen Problemen vorzubeugen, gibt es diesen "compiler", welcher Dateien im `input`-Ordner nimmt und transformiert in den `output`-Ordner legt.
 Dadurch ist das HTML-Overhead überflüssig (aber trotzdem erlaubt) und es werden Stylesheets automatisch auf alle Geschwister- und Kind-Dateien angewendet. Restliche Dateien, wie z.B. Bilder, werden ohne Veränderungen nach `output` kopiert.
+Aus Bequemlichkeit kann auch Markdown statt HTML verwendet werden, bzw. ein Mix (da HTML auch in Markdown erlaubt ist).
 Bei pushes zu main wird [automatisch](.github/workflows/bauen.yaml) das Tag `latest` ersetzt und der gezippte Ordner `output` daran angehängt.
 
 Weitere Funktionen, wie z.B. das Auslagern und Einbinden an verschiedenen Stellen von HTML, können noch hinzugefügt werden.
