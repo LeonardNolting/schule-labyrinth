@@ -1,3 +1,5 @@
+## Checkpoint
+
 # Labyrinth des Grauens
 
 Die Ferien sind zu Ende. An der Schule angekommen bist du überrascht:
