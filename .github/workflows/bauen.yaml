@@ -21,10 +21,9 @@ jobs:
         run: npm ci
       - name: Bauen
         run: npm run run --if-present
-      - uses: papeloto/action-zip@v1
+      - uses: montudor/action-zip@v1
         with:
-          files: output/
-          dest: output.zip
+          args: zip -qq -r output.zip output
       - name: Release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
